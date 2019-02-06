@@ -9,7 +9,8 @@
 
 # Global vars
 PROG_NAME='DockerTinyproxy'
-PROXY_CONF='/etc/tinyproxy/tinyproxy.conf'
+OG_PROXY_CONF='/etc/tinyproxy/tinyproxy.conf'
+PROXY_CONF='/var/tinyproxy.conf'
 TAIL_LOG='/var/log/tinyproxy/tinyproxy.log'
 
 # Usage: screenOut STATUS message
@@ -46,15 +47,15 @@ checkStatus() {
 displayUsage() {
     echo
     echo '  Usage:'
-    echo "      docker run -d --name='tinyproxy' -p <Host_Port>:8888 dannydirect/tinyproxy:latest <ACL>"
+    echo "      docker run -d --name='tinyproxy' -p <Host_Port>:8888 pehala/tinyproxy:latest"
     echo
     echo "      - Set <Host_Port> to the port you wish the proxy to be accessible from."
-    echo "      - Set <ACL> to 'ANY' to allow unrestricted proxy access, or one or more spece seperated IP/CIDR addresses for tighter security."
+    echo "      - Set env variable RULES to 'ANY' to allow unrestricted proxy access, or one or more spece seperated IP/CIDR addresses for tighter security."
     echo
     echo "      Examples:"
-    echo "          docker run -d --name='tinyproxy' -p 6666:8888 dannydirect/tinyproxy:latest ANY"
-    echo "          docker run -d --name='tinyproxy' -p 7777:8888 dannydirect/tinyproxy:latest 87.115.60.124"
-    echo "          docker run -d --name='tinyproxy' -p 8888:8888 dannydirect/tinyproxy:latest 10.103.0.100/24 192.168.1.22/16"
+    echo "          docker run -d --name='tinyproxy' -p 6666:8888 pehala/tinyproxy:latest ANY"
+    echo "          docker run -d --name='tinyproxy' -p 7777:8888 pehala/tinyproxy:latest 87.115.60.124"
+    echo "          docker run -d --name='tinyproxy' -p 8888:8888 pehala/tinyproxy:latest 10.103.0.100/24 192.168.1.22/16"
     echo
 }
 
@@ -112,7 +113,7 @@ setAccess() {
 
 startService() {
     screenOut "Starting Tinyproxy service..."
-    /usr/sbin/tinyproxy
+    /usr/sbin/tinyproxy -c $PROXY_CONF
     checkStatus $? "Could not start Tinyproxy service." \
                    "Tinyproxy service started successfully."
 }
@@ -125,16 +126,18 @@ tailLog() {
 }
 
 # Check args
-if [ "$#" -lt 1 ]; then
-    displayUsage
-    exit 1
-fi
+#if [ "$#" -lt 1 ]; then
+#    displayUsage
+#    exit 1
+#fi
 # Start script
 echo && screenOut "$PROG_NAME script started..."
+# Create config file
+cp $OG_PROXY_CONF $PROXY_CONF
 # Stop Tinyproxy if running
 stopService
 # Parse ACL from args
-export rawRules="$@" && parsedRules=$(parseAccessRules $rawRules) && unset rawRules
+export rawRules="$RULES" && parsedRules=$(parseAccessRules $rawRules) && unset rawRules
 # Set ACL in Tinyproxy config
 setAccess $parsedRules
 # Enable log to file
