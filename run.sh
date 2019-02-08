@@ -9,8 +9,8 @@
 
 # Global vars
 PROG_NAME='DockerTinyproxy'
-OG_PROXY_CONF='/etc/tinyproxy/tinyproxy.conf'
-PROXY_CONF='/var/tinyproxy.conf'
+PROXY_CONF='/etc/tinyproxy/tinyproxy/tinyproxy.conf'
+#PROXY_CONF='/var/tinyproxy.conf'
 TAIL_LOG='/var/log/tinyproxy/tinyproxy.log'
 
 # Usage: screenOut STATUS message
@@ -59,18 +59,6 @@ displayUsage() {
     echo
 }
 
-stopService() {
-    screenOut "Checking for running Tinyproxy service..."
-    if [ "$(pidof tinyproxy)" ]; then
-        screenOut "Found. Stopping Tinyproxy service for pre-configuration..."
-        killall tinyproxy
-        checkStatus $? "Could not stop Tinyproxy service." \
-                       "Tinyproxy service stopped successfully."
-    else
-        screenOut "Tinyproxy service not running."
-    fi
-}
-
 parseAccessRules() {
     list=''
     for ARG in $@; do
@@ -94,11 +82,6 @@ setMiscConfig() {
                    "Set MinSpareServers - Edited $PROXY_CONF successfully."
 }
 
-enableLogFile() {
-	touch /var/log/tinyproxy/tinyproxy.log
-	sed -i -e"s,^#LogFile,LogFile," $PROXY_CONF
-}
-
 setAccess() {
     if [[ "$1" == *ANY* ]]; then
         sed -i -e"s/^Allow /#Allow /" $PROXY_CONF
@@ -113,39 +96,24 @@ setAccess() {
 
 startService() {
     screenOut "Starting Tinyproxy service..."
-    /usr/sbin/tinyproxy -c $PROXY_CONF
+    /usr/bin/tinyproxy -d
     checkStatus $? "Could not start Tinyproxy service." \
                    "Tinyproxy service started successfully."
 }
 
-tailLog() {
-    screenOut "Tailing Tinyproxy log..."
-    tail -f $TAIL_LOG
-    checkStatus $? "Could not tail $TAIL_LOG" \
-                   "Stopped tailing $TAIL_LOG"
-}
-
-# Check args
-#if [ "$#" -lt 1 ]; then
-#    displayUsage
-#    exit 1
-#fi
+# Check Rules
+if [[ -z "${RULES}" ]]; then
+    screenOut "RULES env variable is not set, permitting unrestricted proxy access"
+    RULES="ALL"
+fi
 # Start script
 echo && screenOut "$PROG_NAME script started..."
-# Create config file
-cp $OG_PROXY_CONF $PROXY_CONF
-# Stop Tinyproxy if running
-stopService
 # Parse ACL from args
 export rawRules="$RULES" && parsedRules=$(parseAccessRules $rawRules) && unset rawRules
 # Set ACL in Tinyproxy config
 setAccess $parsedRules
-# Enable log to file
-enableLogFile
 # Start Tinyproxy
 startService
-# Tail Tinyproxy log
-tailLog
-# End
+
 screenOut "$PROG_NAME script ended." && echo
 exit 0

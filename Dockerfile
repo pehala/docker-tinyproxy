@@ -1,18 +1,22 @@
 ###############################################################################
 # Name:         Dockerfile
-# Author:       Daniel Middleton <daniel-middleton.com>
-# Description:  Dockerfile used to build dannydirect/tinyproxy
-# Usage:        docker build -t dannydirect/tinyproxy:latest .
+# Author:       Petr Hála
+# Description:  Dockerfile used to build pehala/tinyproxy
 ###############################################################################
 
-FROM alpine:3.7
+FROM alpine:3.9
 
-MAINTAINER Daniel Middleton <monokal.io>
+MAINTAINER Daniel Middleton
 
 RUN apk add --no-cache \
 	bash \
 	tinyproxy
 
+RUN chmod 777 -R /etc/tinyproxy
+RUN chmod 755 -R /var/log/tinyproxy
+
 COPY run.sh /opt/docker-tinyproxy/run.sh
+
+EXPOSE 8888
 
 ENTRYPOINT ["/opt/docker-tinyproxy/run.sh"]
