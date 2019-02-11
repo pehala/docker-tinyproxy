@@ -94,6 +94,12 @@ setAccess() {
     fi
 }
 
+allowSSL() {
+    sed -i -e"s,#ConnectPort,ConnectPort ," $PROXY_CONF
+    checkStatus $? "Allow SSL ports - Could not edit $PROXY_CONF" \
+                   "Allow SSL ports - Edited $PROXY_CONF successfully."
+}
+
 startService() {
     screenOut "Starting Tinyproxy service..."
     /usr/bin/tinyproxy -d
@@ -111,6 +117,9 @@ echo && screenOut "$PROG_NAME script started..."
 # Parse ACL from args
 export rawRules="$RULES" && parsedRules=$(parseAccessRules $rawRules) && unset rawRules
 # Set ACL in Tinyproxy config
+
+allowSSL
+
 setAccess $parsedRules
 # Start Tinyproxy
 startService
