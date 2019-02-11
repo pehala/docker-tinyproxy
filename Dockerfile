@@ -13,7 +13,7 @@ RUN apk add --no-cache \
 	tinyproxy
 
 RUN chmod 777 -R /etc/tinyproxy
-RUN chmod 755 -R /var/log/tinyproxy
+RUN chmod 777 -R /var/log/tinyproxy
 
 COPY run.sh /opt/docker-tinyproxy/run.sh
 
